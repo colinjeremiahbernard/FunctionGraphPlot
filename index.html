@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="description" content="Function Graph Plot" />
+  <meta charset="utf-8" />
+  <title>Function Graph Plot</title>
+  <style>
+    #container {
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <meta charset=utf-8 />
+  <style id="jsbin-css"></style>
+</head>
+
+<body>
+  <h4>Function Graph Plot</h4>
+  <div id="container"></div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.5/dat.gui.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@fab06914157b741461ab6fe34f46b24e81506336/build/three.min.js"></script>
+  <script src="https://cdn.rawgit.com/mrdoob/three.js/master/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.4.2/math.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@e4063750a93a643fce333a17a06b6b5015d9dc99/examples/js/WebGL.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@7a86f938b389754af14b6001a5f7679b660c946b/examples/js/utils/SceneUtils.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@5608b30f4729ccbe33d5bfa145763c12400f1df5/examples/js/ParametricGeometries.js"></script>
+
+  <script type="text/javascript">
+    // set the scene size
+    var WIDTH = 650, HEIGHT = 390;
+    var centerX = WIDTH / 2;
+    var centerY = HEIGHT / 2;
+
+    // set some camera attributes
+    var VIEW_ANGLE = 50, ASPECT = WIDTH / HEIGHT, NEAR = 1, FAR = 1000;
+
+    // get the DOM element to attach to
+    var $container = $('#container');
+
+    // create a WebGL renderer, camera, and a scene
+    // alterations based on "How to use WebGL 2" from
+    // https://threejs.org/docs/#manual/en/introduction/How-to-use-WebGL2
+    if (WEBGL.isWebGL2Available()) {
+      // next three lines copied from "How to use WebGL 2"
+      var canvas = document.createElement('canvas');
+      var context = canvas.getContext("webgl2");
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context });
+    }
+    else if (WEBGL.isWebGLAvailable())
+      var renderer = new THREE.WebGLRenderer();
+    else
+      throw "WebGL not available. No suitable renderer available.";
+
+    // set the background to white
+    renderer.setClearColor(0xffffff, 2);
+    // enable shadows
+    renderer.shadowMapEnabled = true;
+    renderer.shadowMapType = THREE.PCFSoftShadowMap;
+
+    var scene = new THREE.Scene();
+    var clock = new THREE.Clock();
+    var camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+
+    // the camera starts at 0,0,0 so pull it back for some assignments you may need to adjust this value.
+    // some distance to make the scene visible properly
+    // move the camera so that the moon is always visible 
+    camera.position.set(199, 199, 199);
+    camera.rotation.set(-0.99, 0.55, 0.66);
+
+    // add the camera to the scene
+    scene.add(camera)
+
+    // set up the camera controls.  Please keep in mind that what this does is move the entire scene around.
+    // because the entire scene is moving the position of the camera and lights in relation to objects within 
+    // the scene doesn't change so the lighting on the surface of the object(s) will not change either
+    // var cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
+    // cameraControls.addEventListener( 'mousemove', renderer );
+
+    // start the renderer
+    renderer.setSize(WIDTH, HEIGHT);
+
+    // attach the render-supplied DOM element
+    $container.append(renderer.domElement);
+    // ----------------------------------------------------------------------------------------
+    //  END OF THE STANDARD CODE FOR THE ASSIGNMENT
+    //  Following this is where you must place your own custom code to complete the assignment
+    // ----------------------------------------------------------------------------------------
+    /* Handle the mouse controls */
+    var mousePos = { x: undefined, y: undefined };
+    var mousePressed = false;
+
+    function mouseDown(e) {
+      mousePressed = true;
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    }
+
+    function mouseMove(e) {
+      if (!mousePressed)
+        return;
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    }
+
+    function mouseUp(e) {
+      mousePressed = false;
+    }
+
+    window.addEventListener("mousedown", mouseDown);
+    window.addEventListener("mousemove", mouseMove);
+    window.addEventListener("mouseup", mouseUp);
+    /* End of mouse controls */
+
+    /* Keyboard controls */
+    // whether the f key is pressed
+    var fPressed = false;
+    var gPressed = false;
+
+    // key down function
+    function keyDown(e) {
+      if (e.key == "f")
+        fPressed = true;
+      else if (e.key == "g")
+        gPressed = false;
+    }
+
+    //key up function
+    function keyUp(e) {
+      if (e.key == "f")
+        fPressed = false;
+      else if (e.key == "g")
+        gPressed = false;
+    }
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+    /* End keyboard */
+    /* Rotate/Scale the object */
+    function updateObject() {
+      var obj = changeObject.displayObject;
+      rotateAmount = 0.15;
+      // only rotate/scale when the mouse button is down
+      if (!mousePressed)
+        return;
+
+      // rotate x/y when f or g aren't pressed
+      if (!fPressed && !gPressed) {
+        // handle left/right mouse Movement
+        if (mousePos.x < centerX)
+          obj.rotateY(rotateAmount * -.5);
+        else if (mousePos.x > centerX)
+          obj.rotateY(rotateAmount);
+
+        // handle up/down mouse movement
+        if (mousePos.y < centerY)
+          obj.rotateX(rotateAmount * -.5);
+        else if (mousePos.y > centerY)
+          obj.rotateX(rotateAmount);
+      }
+      // rotate the z if the mouse is pressed
+      else if (fPressed && !gPressed) {
+
+        if (mousePos.x < centerX)
+          obj.rotateX(rotateAmount * -0.5);
+
+        else if (mousePos.x > centerX)
+          obj.rotateX(rotateAmount);
+      }
+
+      // only scale when g is pressed
+      if (gPressed) {
+        if (mousePos.y > centerY) {
+          var scale = obj.scale.x * 0.5;
+          obj.scale.set(scale, scale, scale);
+        }
+        else if (mousePos.y < centerY) {
+          var scale = obj.scale.x * 0.5;
+          obj.scale.set(scale, scale, scale);
+        }
+      }
+    }
+    // end updateObject
+    /* End of Rotate/Scale */
+
+    /*
+   * Given a function, zFunction, create a THREE.ParametricGeometry that plots 
+   * the output of zFunction for x and y values in the range [-1, 1] in 0.1
+   * increments. Example call var coneGeometry = createGeometry(coneZ);
+   * where coneZ has a header of function coneZ(x, y) and returns the
+   * z coordinate
+   * @param zFunction: a function that takes x and y as parameters and
+   *     returns the z coordinate; must be able to handle all input in range [-1, 1]
+   * @returns: A THREE.ParametricGeometry that plots the output of zFunction
+   */
+    function createGeometry(zFunction) {
+      // this function converts the u, v values from ParametricGeometry
+      // to x, y values in the range [-1, 1] to pass to zFunction
+      // this function isn't called directly by the user. It just wraps
+      // the ParametricGeometry input format to work with the assigned format
+      function __uvToxy(u, v, vector) {
+        // Each point starts at -1 and moves 2 * the u or v values so that
+        // a value of 1 = -1 + (2 * 1) to get the assigned range of values
+        // the call to Math.round just handles the floating rounding errors
+        // so any console.log's are easier to read
+        x = Math.round(15 * (-1 + (2 * u))) / 15;
+        y = Math.round(15 * (-1 + (2 * v))) / 15;
+
+        // call the user-passed function to get the z value
+        z = zFunction(x, y);
+
+        // set the vector coordinates
+        vector.set(x, y, z);
+      }
+
+      // ParametricGeometry's constructor loops over values of u, v
+      // that get converted to x, y for the function, slice and stack
+      // values of 15 allow each step to be + 0.1 from -1
+      var parametric = new THREE.ParametricGeometry(__uvToxy, 15, 15);
+      return parametric
+    }  // end createGeometry()
+
+    /*
+     * Change the object on the screen between one of the examples
+     * and user-defined functions
+     * @param name: a string that can be evaluated with eval() to get the 
+     *     z coordinate
+     */
+
+    function changeObject(name) {
+      // the function types that can be used
+      var functions = {
+        "parabola": parabola, "hyperbolic": hyperbolic,
+        "cone": cone, "user": userFunction
+      };
+
+      // remove the previous object from the screen if it's there
+      if (changeObject.displayObject != undefined)
+        scene.remove(changeObject.displayObject);
+      // clear the user function if one exists
+      if (name == "user")
+        userFunction.userInputFunction = undefined;
+
+      // create the geometry, material, and display object as usual
+      var geometry = createGeometry(functions[name]);
+      var material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+      changeObject.displayObject = new THREE.Mesh(geometry, material);
+      // won't display correctly without updating vertex normals
+      changeObject.displayObject.geometry.computeVertexNormals();
+      changeObject.displayObject.castShadow = true;
+
+      // increase the size and move the object so it's easier to see
+      changeObject.displayObject.scale.set(20, 20, 15);
+      changeObject.displayObject.position.set(32, 5, 32);
+      scene.add(changeObject.displayObject);
+    }// end changeObject()
+
+    /*Example functions 
+     * The parabola function from the assignment prompt. It does need to be 
+     * rotated to match what's shown in the assignment
+     * @param x: x coordinate as a float
+     * @param y: y coordinate as a float
+     * @returns: z coordinate as a float
+     */
+    function parabola(x, y) {
+      z = 3 * x ** 2 + 3 * y ** 2 + 3;
+      return z;
+    }
+
+    /*
+     * Create a hyperbolic parabola using the formula given by 
+     * Demaine, Demaine, & Lubiw at
+     * https://erikdemaine.org/hypar/
+     * @param x: x coordinate as a float
+     * @param y: y coordinate as a float
+     * @returns: z coordinate as a float
+     */
+    function hyperbolic(x, y) {
+      z = 3 * x ** 2 - 2 * y ** 2 + 3;
+      return z;
+    }
+
+    /*
+       * Create a cone-like object
+       * @param x: x coordinate
+       * @param y: y coordinate
+       * @returns: z coordinate
+       */
+    function cone(x, y) {
+      var z = Math.sqrt((4 * x) ** 2 + (4 * y) ** 2) + 3;
+      return z;
+    }
+
+    /* End Example Functions */
+
+    /*
+   * Determine the z coordinate based on a user-provided function
+   * The user's function must be something that eval() can evaluate
+   * and return a float, like "Math.sqrt(x**2 + y**2)"
+   * @param x: x coordinate
+   * @param y: y coordinate
+   * @returns: z coordinate
+   */
+    function userFunction(x, y) {
+      // get a user-defined function if the user hasn't already entered one,
+      // save it for future points in this object
+      if (userFunction.userInputFunction == undefined) {
+        userFunction.userInputFunction = prompt("Enter a z-value to create user-defunction()");
+      }
+      return eval(userFunction.userInputFunction);
+    }
+
+    // Create a hyperbolic parabola as the first object
+    changeObject("parabola");
+
+    // Add the axis helper
+    var axesHelper = new THREE.AxesHelper(2000);
+    scene.add(axesHelper);
+
+    // add the plane
+    var planeGeo = new THREE.PlaneGeometry(2000, 2000);
+    var planeMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    var plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotateX(Math.PI / -2);
+    plane.position.set(-50, -130, 60);
+    plane.receiveShadow = true;
+    scene.add(plane);
+
+    // add the lighting
+    var ambient = new THREE.AmbientLight(0xffffff, 0.01);
+    scene.add(ambient);
+
+    var pointlight = new THREE.PointLight(0xffffff, 0.3);
+    pointlight.position.set(10, 128, -20);
+    pointlight.castShadow = true;
+    scene.add(pointlight);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      updateObject();
+      render();
+    }
+
+    function render() {
+      // cameraControls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+  <!-- buttons to change the object -->
+  <h5>Choose a functional object:</h5>
+  <button name="parabola" onclick="changeObject(this.name);">Parabola-function</button>
+  <button name="cone" onclick="changeObject(this.name);">Cone-function</button>
+  <button name="hyperbolic" onclick="changeObject(this.name);">Hyperbolic-function</button>
+  <button name="user" onclick="changeObject(this.name);">User-function</button>
+  <!-- end of button change objects -->
+
+</body>
+
+</html>
